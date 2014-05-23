@@ -58,6 +58,7 @@ along with GCC; see the file COPYING3.  If not see
 #include "target.h"
 #include "cgraph.h"
 #include "wide-int.h"
+#include "demangle.h"
 
 /* Debugging support.  */
 
@@ -3367,6 +3368,35 @@ finish_mangling_internal (const bool warn)
 
   /* Null-terminate the string.  */
   write_char ('\0');
+
+#if ENABLE_CHECKING
+  /* Make sure we can demangle what we just generated.  */
+  {
+    const char *str ATTRIBUTE_UNUSED;
+    const char *mangled_str;
+    int dmgl_opts;
+
+    dmgl_opts = (DMGL_VERBOSE
+		 | DMGL_ANSI
+		 | DMGL_GNU_V3
+		 | DMGL_RET_POSTFIX
+		 | DMGL_PARAMS);
+
+    mangled_str = (const char *) obstack_base (mangle_obstack);
+    str = cplus_demangle_v3 (mangled_str, dmgl_opts);
+#if 0
+    /* XXX The above catches potential demangler crashes.  And,
+       ideally, we'd also abort if demangling fails.  However, we
+       can't do that because the demangler isn't able to demangle all
+       symbols we generate by default.  Some failures might be
+       demangler bugs, others unknown mangler bugs, and others known
+       mangler bugs fixed with a higher -fabi-version, which the
+       demangler doesn't have a workaround for.  */
+    if ((str != NULL) != (mangled_str[0] == '_' && mangled_str[1] == 'Z'))
+      internal_error ("demangling failed for: %s", mangled_str);
+#endif
+  }
+#endif
 }
 
 
