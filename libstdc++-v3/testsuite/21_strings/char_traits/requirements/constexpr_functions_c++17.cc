@@ -25,10 +25,40 @@ template<typename CT>
   test_assign()
   {
     using char_type = typename CT::char_type;
-    char_type s1[2] = {};
-    const char_type s2[2] = {1, 0};
-    CT::assign(s1[0], s2[0]);
-    return s1[0] == char_type{1};
+
+    auto check = [](char_type* s1, const char_type* s2)
+      {
+	CT::assign(s1[0], s2[0]);
+	return s1[0] == char_type{1};
+      };
+
+    // const strings.
+
+    {
+      char_type s1[2] = {};
+      const char_type s2[2] = {1, 0};
+      if (!check (s1, s2))
+	return false;
+    }
+
+    // non-const strings.
+
+    {
+      char_type s1[2] = {};
+      char_type s2[2] = {1, 0};
+      if (!check (s1, s2))
+	return false;
+    }
+
+    {
+      char_type s1[2] = {};
+      char_type s2[2] = {};
+      s2[0] = char_type{1};
+      if (!check (s1, s2))
+	return false;
+    }
+
+    return true;
   }
 
 template<typename CT>
@@ -36,14 +66,48 @@ template<typename CT>
   test_compare()
   {
     using char_type = typename CT::char_type;
-    const char_type s1[3] = {1, 2, 3};
-    const char_type s2[3] = {1, 2, 3};
-    if (CT::compare(s1, s2, 3) != 0)
-      return false;
-    if (CT::compare(s2, s1, 3) != 0)
-      return false;
-    if (CT::compare(s1+1, s2, 2) <= 0)
-      return false;
+
+    auto check = [](const char_type* s1, const char_type* s2)
+      {
+	if (CT::compare(s1, s2, 3) != 0)
+	  return false;
+	if (CT::compare(s2, s1, 3) != 0)
+	  return false;
+	if (CT::compare(s1+1, s2, 2) <= 0)
+	  return false;
+	return true;
+      };
+
+    // const arrays.
+
+    {
+      const char_type s1[3] = {1, 2, 3};
+      const char_type s2[3] = {1, 2, 3};
+      if (!check (s1, s2))
+	return false;
+    }
+
+    // non-const arrays.
+
+    {
+      char_type s1[3] = {1, 2, 3};
+      char_type s2[3] = {1, 2, 3};
+      if (!check (s1, s2))
+	return false;
+    }
+
+    {
+      char_type s1[3] = {};
+      char_type s2[3] = {};
+      for (size_t i = 0; i < 3; i++)
+	{
+	  s1[i] = char_type(i+1);
+	  s2[i] = char_type(i+1);
+	}
+      if (!check (s1, s2))
+	return false;
+    }
+
     return true;
   }
 
@@ -52,11 +116,40 @@ template<typename CT>
   test_length()
   {
     using char_type = typename CT::char_type;
-    const char_type s1[4] = {1, 2, 3, 0};
-    if (CT::length(s1) != 3)
-      return false;
-    if (CT::length(s1+1) != 2)
-      return false;
+
+    auto check = [](const char_type* s)
+      {
+	if (CT::length(s) != 3)
+	  return false;
+	if (CT::length(s+1) != 2)
+	  return false;
+	return true;
+      };
+
+    // const strings.
+
+    {
+      const char_type s[4] = {1, 2, 3, 0};
+      if (!check (s))
+	return false;
+    }
+
+    // non-const strings.
+
+    {
+      char_type s[4] = {1, 2, 3, 0};
+      if (!check (s))
+	return false;
+    }
+
+    {
+      char_type s[4] = {};
+      for (size_t i = 0; i < 3; i++)
+	s[i] = char_type(i+1);
+      if (!check (s))
+	return false;
+    }
+
     return true;
   }
 
@@ -65,11 +158,40 @@ template<typename CT>
   test_find()
   {
     using char_type = typename CT::char_type;
-    const char_type s1[3] = {1, 2, 3};
-    if (CT::find(s1, 3, char_type{2}) != s1+1)
-      return false;
-    if (CT::find(s1, 3, char_type{4}) != nullptr)
-      return false;
+
+    auto check = [](const char_type* s)
+      {
+	if (CT::find(s, 3, char_type{2}) != s+1)
+	  return false;
+	if (CT::find(s, 3, char_type{4}) != nullptr)
+	  return false;
+	return true;
+      };
+
+    // const arrays.
+
+    {
+      const char_type s[3] = {1, 2, 3};
+      if (!check(s))
+	return false;
+    }
+
+    // non-const arrays.
+
+    {
+      char_type s[3] = {1, 2, 3};
+      if (!check(s))
+	return false;
+    }
+
+    {
+      char_type s[3] = {};
+      for (size_t i = 0; i < 3; i++)
+	s[i] = char_type(i+1);
+      if (!check(s))
+	return false;
+    }
+
     return true;
   }
 
@@ -98,7 +220,12 @@ static_assert( test_compare<std::char_traits<char32_t>>() );
 static_assert( test_length<std::char_traits<char32_t>>() );
 static_assert( test_find<std::char_traits<char32_t>>() );
 
-struct C { unsigned char c; };
+struct C
+{
+  C() = default;
+  constexpr C(auto c_) : c(c_) {}
+  unsigned char c;
+};
 constexpr bool operator==(const C& c1, const C& c2) { return c1.c == c2.c; }
 constexpr bool operator<(const C& c1, const C& c2) { return c1.c < c2.c; }
 static_assert( test_assign<std::char_traits<C>>() );
