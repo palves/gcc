@@ -489,8 +489,8 @@ Feature-testing recommendations for C++</link>.
 	P0426R1
 	</link>
       </entry>
-      <entry align="center"> 7 (partial) </entry>
-      <entry><code> ??? </code></entry>
+      <entry align="center"> 7 </entry>
+      <entry><code> __cpp_lib_constexpr_char_traits >= 201611 </code></entry>
     </row>
 
     <row>
